@@ -25,32 +25,33 @@ async def request(session, url, data, attempt):
 
 
 # 요청함수
-async def request_sessions(urls):
+async def request_sessions(form_data_list):
     async with aiohttp.ClientSession() as session:
         # 작업 목록
-        tasks = [asyncio.ensure_future(request(session, url, urls.index(url))) for url in urls]
+        URL = "https://papago.naver.com/apis/n2mt/translate"
+        tasks = [asyncio.ensure_future(request(session=session, url=URL, data=data, attempt=form_data_list.index(data))) for data in form_data_list]
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def rand_str_gen():
-    data = FormData()
-    data.add_field
-    rand_str_list = [TRANSLATED_OBJECT[random.randrange(1,11)] for _ in range(1)]
+    rand_str_list = [TRANSLATED_OBJECT[random.randrange(1,11)] for _ in range(5)]
     rand_str = reduce(lambda x, y : x + '\n' + y, rand_str_list)
-    return rand_str
+    data = FormData()
+    data.add_field(name='text', value=rand_str)
+    return data
 
 
 
 def main():
-    # 랜덤 문자열을 포함한 구글 번역 쿼리 리스트
-    query_list = [f'https://papago.naver.com/apis/n2mt/translate{rand_str_gen()}' for _ in range(100)]
-    print(query_list)
+    # 검색 쿼리 (formdata)
+    form_data = [rand_str_gen() for _ in range(100)]
+    print(form_data)
     start = time.time()
-    asyncio.run(request_sessions(query_list))
+    asyncio.run(request_sessions(form_data))
 
     duration = time.time() - start
-    print(f'Downloaded {len(query_list)} sites in {duration} seconds')
+    print(f'Downloaded {len(form_data)} sites in {duration} seconds')
 
 
 if __name__ == "__main__":
