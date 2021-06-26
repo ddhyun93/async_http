@@ -19,17 +19,19 @@ TRANSLATED_OBJECT = {
 }
 
 
-async def request(session, url, data, attempt):
-    async with session.post(url, data=data) as request:
-        print(f"query status code : {await request.text('utf8')} from attempt num {attempt}")
+async def request(session, url, attempt):
+    async with session.get(url) as request:
+        # print(f"query status code : {await request.text('utf8')} from attempt num {attempt}")
+        print(f"query status code : {request.status} from attempt num {attempt}")
 
 
 # 요청함수
-async def request_sessions(form_data_list):
+async def request_sessions(data_dict):
     async with aiohttp.ClientSession() as session:
         # 작업 목록
-        URL = "https://papago.naver.com/apis/n2mt/translate"
-        tasks = [asyncio.ensure_future(request(session=session, url=URL, data=data, attempt=form_data_list.index(data))) for data in form_data_list]
+        URL = "https://em56ce3j4m.execute-api.ap-northeast-2.amazonaws.com/dev/api/v1.4/translate"
+        tasks = [asyncio.ensure_future(request(session=session, url=URL+data['query_string'],
+                 attempt=data_dict.index(data))) for data in data_dict]
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -37,21 +39,26 @@ async def request_sessions(form_data_list):
 def rand_str_gen():
     rand_str_list = [TRANSLATED_OBJECT[random.randrange(1,11)] for _ in range(5)]
     rand_str = reduce(lambda x, y : x + '\n' + y, rand_str_list)
-    data = FormData()
-    data.add_field(name='text', value=rand_str)
-    return data
 
+    TEXT = rand_str
+    SOURCE = 'ko'
+    TARGET = 'en'
+
+    # data = FormData()
+    # data.add_field(name='text', value=rand_str)
+    # data.add_field(name='deviceId', value=DEVICE_ID)
+    # headers = {'authorization': AUTH_CODE, 'cookie': COOKIE}
+    return {'query_string': f"?text={TEXT}&source={SOURCE}&target={TARGET}"}
 
 
 def main():
     # 검색 쿼리 (formdata)
-    form_data = [rand_str_gen() for _ in range(100)]
-    print(form_data)
+    data = [rand_str_gen() for _ in range(1000)]
     start = time.time()
-    asyncio.run(request_sessions(form_data))
+    asyncio.run(request_sessions(data))
 
     duration = time.time() - start
-    print(f'Downloaded {len(form_data)} sites in {duration} seconds')
+    print(f'Downloaded {len(data)} sites in {duration} seconds')
 
 
 if __name__ == "__main__":
